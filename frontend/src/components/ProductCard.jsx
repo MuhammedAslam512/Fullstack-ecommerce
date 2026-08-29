@@ -1,7 +1,16 @@
 import { Eye, ShoppingCart, Star } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 
 export default function ProductCard({ product, onViewDetails }) {
+  const { addToCart } = useCart();
   const defaultImage = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80';
+
+  const handleAdd = async () => {
+    const success = await addToCart(product._id, 1);
+    if (success) {
+      alert(`✅ Added ${product.name} to cart!`);
+    }
+  };
 
   return (
     <div className="product-card">
@@ -34,7 +43,7 @@ export default function ProductCard({ product, onViewDetails }) {
             <button className="btn btn-outline" style={{ flex: 1 }} onClick={() => onViewDetails(product)}>
               <Eye size={16} /> View
             </button>
-            <button className="btn btn-primary" style={{ flex: 1 }} disabled={product.stock === 0}>
+            <button className="btn btn-primary" style={{ flex: 1 }} disabled={product.stock === 0} onClick={handleAdd}>
               <ShoppingCart size={16} /> Add
             </button>
           </div>

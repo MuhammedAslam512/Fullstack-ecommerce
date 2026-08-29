@@ -1,19 +1,18 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
-import Home from './pages/Home';
 import Products from './pages/Products';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
+import Cart from './pages/Cart';
 import ProtectedRoute from './routes/ProtectedRoute';
 import AdminRoute from './routes/AdminRoute';
 
 export default function App() {
   return (
-    <AuthProvider>
       <BrowserRouter>
-        <div style={{ minHeight: '100vh', background: '#f7fafc' }}>
+        <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
           <Navbar />
           <Routes>
             {/* Public Routes */}
@@ -21,18 +20,19 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
 
-            {/* Protected Routes (Logged-in users only) */}
+            {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/profile" element={<Profile />} />
+              <Route path="/cart" element={<Cart />} />
             </Route>
 
-            {/* Admin Routes (Admins only) */}
+            {/* Admin Routes */}
             <Route element={<AdminRoute />}>
               <Route path="/admin/dashboard" element={<div style={{ padding: '40px', textAlign: 'center' }}>👨‍💼 Admin Dashboard</div>} />
             </Route>
           </Routes>
         </div>
       </BrowserRouter>
-    </AuthProvider>
   );
 }
+
