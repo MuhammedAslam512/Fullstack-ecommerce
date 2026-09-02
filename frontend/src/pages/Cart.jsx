@@ -134,9 +134,9 @@ export default function Cart() {
               <span style={{ color: '#2563eb' }}>₹{cart.totalAmount}</span>
             </div>
 
-            <button className="btn btn-primary" style={{ width: '100%', padding: '14px', fontSize: '16px' }}>
+            <Link to="/checkout" className="btn btn-primary" style={{ width: '100%', padding: '14px', fontSize: '16px', textDecoration: 'none' }}>
               Proceed to Checkout <ArrowRight size={18} />
-            </button>
+            </Link>
           </div>
         </div>
       </div>

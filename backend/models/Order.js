@@ -31,11 +31,20 @@ const orderSchema = new mongoose.Schema(
       enum: ['cod', 'card', 'upi'],
       default: 'cod'
     },
+    paymentIntent: {
+      id: String,
+      status: String,
+      amount: Number
+    },
+
+    paidAt: Date,
+
     paymentStatus: {
       type: String,
-      enum: ['pending', 'paid', 'failed'],
+      enum: ['pending', 'paid', 'failed', 'refunded'],
       default: 'pending'
     },
+    
     orderStatus: {
       type: String,
       enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],

@@ -4,12 +4,15 @@ import App from './App.jsx';
 import './index.css';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { SocketProvider } from './context/SocketContext';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AuthProvider>
       <CartProvider>
-        <App />
+        <SocketProvider>
+          <App />
+        </SocketProvider>
       </CartProvider>
     </AuthProvider>
   </React.StrictMode>

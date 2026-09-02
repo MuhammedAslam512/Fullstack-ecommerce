@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { ShoppingBag, ShoppingCart, User, LogOut, ShieldCheck, LogIn } from 'lucide-react';
+import { ShoppingBag, ShoppingCart, User, LogOut, ShieldCheck, LogIn, Package } from 'lucide-react';
 
 export default function Navbar() {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
@@ -43,6 +43,9 @@ export default function Navbar() {
                   <ShieldCheck size={14} style={{ marginRight: '4px' }} /> Admin
                 </span>
               )}
+              <Link to="/my-orders" style={styles.link} title="Order History">
+                <Package size={18} style={{ marginRight: '4px' }} /> Orders
+              </Link>
 
               <Link to="/profile" style={styles.userLink}>
                 <User size={18} style={{ marginRight: '6px' }} />

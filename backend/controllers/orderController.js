@@ -1,6 +1,7 @@
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const { getIO } = require('../config/socket')
 
 // CREATE order (from cart)
 exports.createOrder = async (req, res) => {
@@ -43,6 +44,17 @@ exports.createOrder = async (req, res) => {
     cart.items = [];
     cart.totalAmount = 0;
     await cart.save();
+
+    try {
+      const io = getIO();
+      io.to('admin_room').emit('new_order_placed', {
+        message: `🎉 New Order Placed!`,
+        totalAmount: order.totalAmount,
+        customerName: req.user.name
+      });
+    } catch (err) {
+      console.log('Socket notification notice:', err.message);
+    }
 
     res.status(201).json({ success: true, message: 'Order placed!', data: order });
   } catch (error) {

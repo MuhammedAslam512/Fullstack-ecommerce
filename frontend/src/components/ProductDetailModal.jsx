@@ -1,9 +1,19 @@
-import { X, Star, ShoppingCart, ShieldCheck } from 'lucide-react';
+import { X, Star, ShoppingCart } from 'lucide-react';
+import ProductReviews from './ProductReviews';
+import { useCart } from '../context/CartContext';
 
 export default function ProductDetailModal({ product, onClose }) {
   if (!product) return null;
 
+  const { addToCart } = useCart();
   const defaultImage = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80';
+
+  const handleAdd = async () => {
+    const success = await addToCart(product._id, 1);
+    if (success) {
+      alert(`✅ Added ${product.name} to cart!`);
+    }
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -29,6 +39,7 @@ export default function ProductDetailModal({ product, onClose }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '12px' }}>
               <Star size={16} color="#f59e0b" fill="#f59e0b" />
               <span style={{ fontWeight: '600' }}>{product.ratings || 0}</span>
+              <span style={{ fontSize: '12px', color: '#94a3b8' }}>({product.numReviews || 0} reviews)</span>
             </div>
 
             <p style={{ fontSize: '22px', fontWeight: '800', color: '#2563eb', marginBottom: '12px' }}>
@@ -37,11 +48,14 @@ export default function ProductDetailModal({ product, onClose }) {
 
             <p style={{ fontSize: '14px', color: '#475569', marginBottom: '20px' }}>{product.description}</p>
 
-            <button className="btn btn-primary" style={{ width: '100%', padding: '12px' }}>
+            <button className="btn btn-primary" style={{ width: '100%', padding: '12px' }} onClick={handleAdd}>
               <ShoppingCart size={18} /> Add to Cart
             </button>
           </div>
         </div>
+
+        {/* Product Reviews Section */}
+        <ProductReviews productId={product._id} />
       </div>
     </div>
   );

@@ -15,13 +15,31 @@ const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 const app = express();
 
 // Security
 app.use(helmet());
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.CLIENT_URL
+].filter(Boolean)
+
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, or Postman)
+    if (!origin) return callback(null, true);
+
+    // In development or if origin matches allowed list
+    if (process.env.NODE_ENV === 'development' || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('CORS policy does not allow access from this origin.'));
+  },
   credentials: true
 }));
 
@@ -42,7 +60,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(logger);
 
 // Home route
-app.get(['/','/api'], (req, res) => {
+app.get(['/', '/api'], (req, res) => {
   res.json({
     success: true,
     message: '🛒 E-Commerce API v1.0',
@@ -64,6 +82,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Error handlers
 app.use(notFound);
