@@ -12,6 +12,12 @@ import MyOrders from './pages/MyOrders';
 import ProtectedRoute from './routes/ProtectedRoute';
 import AdminRoute from './routes/AdminRoute';
 import { Bell } from 'lucide-react';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminProducts from './pages/admin/AdminProducts';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminCategories from './pages/admin/AdminCategories';
+import AdminUsers from './pages/admin/AdminUsers';
 
 function LiveToastNotification() {
   const { liveNotification } = useSocket();
@@ -66,9 +72,17 @@ export default function App() {
           </Route>
 
           {/* Admin Routes */}
+
           <Route element={<AdminRoute />}>
-            <Route path="/admin/dashboard" element={<div style={{ padding: '40px', textAlign: 'center' }}>👨‍💼 Admin Dashboard</div>} />
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="products" element={<AdminProducts />} />
+              <Route path="orders" element={<AdminOrders />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="users" element={<AdminUsers />} />
+            </Route>
           </Route>
+
         </Routes>
       </div>
     </BrowserRouter>

@@ -1,17 +1,28 @@
-import { Navigate,Outlet } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { Navigate, Outlet } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function AdminRoute() {
-    const {isAuthenticate, isAdmin, loading} = useAuth()
+  const { isAuthenticated, isAdmin, loading, user } = useAuth();
 
-    if(loading) {
-        return(
-            <div style={{textAlign : 'center', padding: '50px', fontSize: '18px'}}>
-                Verifying Admin privilages...
-            </div>
-        )
-    }
+  console.log('🛡️ AdminRoute:', {
+    loading,
+    isAuthenticated,
+    isAdmin,
+    role: user?.role
+  });
 
-    return isAuthenticate && isAdmin ? <Outlet/> : <Navigate to = "/" replace />
+  if (loading) {
+    return (
+      <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px' }}>
+        ⏳ Verifying admin privileges...
+      </div>
+    );
+  }
+
+  // Must be logged in AND admin
+  if (!isAuthenticated || !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <Outlet />;
 }
-

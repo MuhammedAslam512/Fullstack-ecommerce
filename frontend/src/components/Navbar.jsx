@@ -20,7 +20,7 @@ export default function Navbar() {
         <Link to="/" style={styles.logo}>
           <ShoppingBag size={24} color="#2563eb" />
           <span style={{ marginLeft: '8px', fontWeight: 'bold', fontSize: '20px', color: '#0f172a' }}>
-            ShopNest
+            Donglify
           </span>
         </Link>
 
@@ -39,9 +39,9 @@ export default function Navbar() {
           {isAuthenticated ? (
             <>
               {isAdmin && (
-                <span style={styles.adminBadge}>
+                <Link to="/admin" style={styles.adminBadge}>
                   <ShieldCheck size={14} style={{ marginRight: '4px' }} /> Admin
-                </span>
+                </Link>
               )}
               <Link to="/my-orders" style={styles.link} title="Order History">
                 <Package size={18} style={{ marginRight: '4px' }} /> Orders
