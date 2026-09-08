@@ -10,8 +10,9 @@ const {
 } = require('../controllers/productController');
 const { protect, authorize } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const { cacheMiddleware} = require('../middleware/cache')
 
-router.get('/', getAllProducts);
+router.get('/',cacheMiddleware(60), getAllProducts);
 router.get('/:id', getProduct);
 router.post('/', protect, authorize('admin'), createProduct);
 router.put('/:id', protect, authorize('admin'), updateProduct);

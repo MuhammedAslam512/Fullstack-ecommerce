@@ -1,4 +1,5 @@
 const Product = require('../models/Product');
+const { clearCache } = require('../middleware/cache')
 
 // GET all products (public) - with pagination, search, filter
 exports.getAllProducts = async (req, res) => {
@@ -65,7 +66,7 @@ exports.getProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
       .populate('category', 'name description');
-      
+
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
@@ -80,6 +81,7 @@ exports.createProduct = async (req, res) => {
   try {
     const product = await Product.create(req.body);
     res.status(201).json({ success: true, message: 'Product created!', data: product });
+    clearCache('/api/products')
   } catch (error) {
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(e => e.message);
@@ -100,6 +102,7 @@ exports.updateProduct = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
     res.json({ success: true, message: 'Product updated!', data: product });
+    clearCache('/api/products')
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

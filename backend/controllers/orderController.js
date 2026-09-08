@@ -129,4 +129,59 @@ exports.updateOrderStatus = async (req, res) => {
 };
 
 
+// @desc    Get Sales Analytics & Monthly/Daily Trends (Admin)
+// @route   GET /api/orders/analytics
+// @access  Private/Admin
+exports.getSalesAnalytics = async (req, res) => {
+  try {
+    // 1. Calculate overall totals
+    const totalOrders = await Order.countDocuments();
+    const paidOrders = await Order.find({ paymentStatus: 'paid' });
+    const totalRevenue = paidOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+
+    // 2. MongoDB Aggregation: Group Sales by Date (Last 30 Days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const dailyTrends = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: thirtyDaysAgo },
+          paymentStatus: 'paid'
+        }
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          revenue: { $sum: '$totalAmount' },
+          ordersCount: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } } // Sort chronologically
+    ]);
+
+    // Format output for charts
+    const chartData = dailyTrends.map((item) => ({
+      date: item._id,
+      revenue: item.revenue,
+      orders: item.ordersCount
+    }));
+
+    res.status(200).json({
+      success: true,
+      summary: {
+        totalOrders,
+        totalRevenue,
+        paidOrdersCount: paidOrders.length
+      },
+      chartData
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
 
