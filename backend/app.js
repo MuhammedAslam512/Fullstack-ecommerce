@@ -56,6 +56,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Static folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Logger
 app.use(logger);

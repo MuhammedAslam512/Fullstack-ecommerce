@@ -1,7 +1,10 @@
 // ─────────────────────────────────────────
-// AUTH CONTROLLER
+// AUTH CONTROLLER (With BullMQ Email Queue)
 // ─────────────────────────────────────────
+const crypto = require('crypto');
 const User = require('../models/User');
+// ⚡ IMPORT BULLMQ QUEUE HELPERS:
+const { addWelcomeEmailJob, addResetPasswordEmailJob } = require('../queues/emailQueue');
 
 // ── Helper: Create token & send response ──
 const sendTokenResponse = (user, statusCode, res, message) => {
@@ -49,6 +52,10 @@ const register = async (req, res) => {
       role
     });
 
+    // ⚡ 1. OFFLOAD WELCOME EMAIL TO BULLMQ BACKGROUND QUEUE (Takes 2ms!):
+    addWelcomeEmailJob(user);
+
+    // ⚡ 2. SEND INSTANT HTTP RESPONSE BACK TO CLIENT:
     sendTokenResponse(user, 201, res, 'Registered successfully! 🎉');
 
   } catch (error) {
@@ -134,6 +141,98 @@ const getMe = async (req, res) => {
 };
 
 // ─────────────────────────────────────────
+// FORGOT PASSWORD - POST /api/auth/forgot-password
+// ─────────────────────────────────────────
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide email!'
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No user with this email!'
+      });
+    }
+
+    // Generate reset token
+    const resetToken = user.getResetPasswordToken();
+    await user.save({ validateBeforeSave: false });
+
+    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
+
+    // ⚡ OFFLOAD RESET EMAIL TO BULLMQ BACKGROUND QUEUE:
+    addResetPasswordEmailJob(user, resetUrl);
+
+    res.status(200).json({
+      success: true,
+      message: '✅ Password reset link sent to your email!'
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// ─────────────────────────────────────────
+// RESET PASSWORD - POST /api/auth/reset-password
+// ─────────────────────────────────────────
+const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.query;
+    const { password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token and new password required!'
+      });
+    }
+
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: '❌ Invalid or expired token!'
+      });
+    }
+
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    sendTokenResponse(user, 200, res, 'Password reset successful! 🎉');
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// ─────────────────────────────────────────
 // UPDATE PASSWORD - PUT /api/auth/updatepassword
 // ─────────────────────────────────────────
 const updatePassword = async (req, res) => {
@@ -171,9 +270,7 @@ const updatePassword = async (req, res) => {
 };
 
 // ─────────────────────────────────────────
-// UPLOAD AVATAR
-// POST /api/auth/upload-avatar
-// Protected + File upload
+// UPLOAD AVATAR - POST /api/auth/upload-avatar
 // ─────────────────────────────────────────
 const uploadAvatar = async (req, res) => {
   try {
@@ -184,7 +281,6 @@ const uploadAvatar = async (req, res) => {
       });
     }
 
-    // Update user's avatar path
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { avatar: req.file.path },
@@ -209,11 +305,13 @@ const uploadAvatar = async (req, res) => {
   }
 };
 
-// Update exports:
+// Export all functions
 module.exports = {
   register,
   login,
   getMe,
+  forgotPassword,
+  resetPassword,
   updatePassword,
-  uploadAvatar  // ← add this
+  uploadAvatar
 };

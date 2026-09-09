@@ -1,9 +1,10 @@
 // ─────────────────────────────────────────
-// USER MODEL
+// USER MODEL (Fullstack Production Version)
 // ─────────────────────────────────────────
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto'); // Built-in Node module for generating random tokens
 
 const userSchema = new mongoose.Schema(
   {
@@ -54,6 +55,17 @@ const userSchema = new mongoose.Schema(
       type: String,
       maxlength: 200,
       default: ''
+    },
+
+    // 🔑 FORGOT PASSWORD FIELDS (Added for Day 24):
+    resetPasswordToken: {
+      type: String,
+      select: false
+    },
+
+    resetPasswordExpire: {
+      type: Date,
+      select: false
     }
   },
   { timestamps: true }
@@ -61,22 +73,18 @@ const userSchema = new mongoose.Schema(
 
 // ─────────────────────────────────────────
 // HASH PASSWORD BEFORE SAVE
-// MUST use regular function, NOT arrow function!
 // ─────────────────────────────────────────
 userSchema.pre('save', async function () {
-  // Only hash if password was changed
   if (!this.isModified('password')) {
     return;
   }
 
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-
 });
 
 // ─────────────────────────────────────────
 // METHOD: Check if password matches
-// MUST use regular function, NOT arrow function!
 // ─────────────────────────────────────────
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
@@ -84,14 +92,33 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 
 // ─────────────────────────────────────────
 // METHOD: Generate JWT Token
-// MUST use regular function, NOT arrow function!
 // ─────────────────────────────────────────
 userSchema.methods.generateToken = function () {
   return jwt.sign(
     { id: this._id },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE }
+    { expiresIn: process.env.JWT_EXPIRE || '7d' }
   );
+};
+
+// ─────────────────────────────────────────
+// METHOD: Generate Reset Password Token (Day 24)
+// ─────────────────────────────────────────
+userSchema.methods.getResetPasswordToken = function () {
+  // 1. Generate a random 20-byte string (e.g. "a1b2c3d4e5f6...")
+  const resetToken = crypto.randomBytes(20).toString('hex');
+
+  // 2. Hash the token and save it to MongoDB for security
+  this.resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  // 3. Set token expiry time (10 minutes from now)
+  this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+
+  // 4. Return the UNHASHED token (to send in the email link)
+  return resetToken;
 };
 
 const User = mongoose.model('User', userSchema);
