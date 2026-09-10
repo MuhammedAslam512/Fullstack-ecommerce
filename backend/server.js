@@ -1,30 +1,32 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
-const http = require('http'); // Native HTTP module
-const app = require('./app');
+const http = require('http');
+const { app, setupGraphQLAndErrors } = require('./app'); // Import helper
 const connectDB = require('./config/db');
 const { initSocket } = require('./config/socket');
-const initEmailWorker = require('./workers/emailWorker')
+const initEmailWorker = require('./workers/emailWorker');
 
 const PORT = process.env.PORT || 5000;
 
-// Wrap Express with HTTP Server
 const server = http.createServer(app);
-
-// Initialize WebSockets
 initSocket(server);
 
 const startServer = async () => {
   try {
+    // 1. Connect MongoDB
     await connectDB();
 
-    //start bullmq background worker
+    // 2. Start BullMQ Email Worker
     initEmailWorker();
 
+    // 3. Setup Apollo GraphQL Server AND Error Handlers in correct order
+    await setupGraphQLAndErrors(app);
+
+    // 4. Start Server
     server.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`⚡ WebSockets ready`);
+      console.log(`🌐 GraphQL Playground available at http://localhost:${PORT}/graphql`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
