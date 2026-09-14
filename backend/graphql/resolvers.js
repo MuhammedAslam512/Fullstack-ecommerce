@@ -8,7 +8,7 @@ const resolvers = {
   // ── 1. QUERIES (GET equivalent) ───────────────────────────
   Query: {
     // Fetch all products (optional search)
-    products: async (_, { search }) => {
+    products: async (_, { search }) => { 
       let filter = { isActive: true };
       if (search) {
         const regex = new RegExp(search, 'i');
