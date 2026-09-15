@@ -1,0 +1,70 @@
+name: 🚀 Fullstack CI/CD Pipeline
+
+# ── TRIGGERS: Run workflow on Push or Pull Request to main branch ──
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # JOB 1: BACKEND AUTOMATED TESTING & BUILD
+  # ─────────────────────────────────────────────────────────────
+  backend-test:
+    name: 🧪 Backend Test Suite
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: 📥 Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js Environment (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: './backend/package-lock.json'
+
+      - name: 📦 Install Backend Dependencies
+        run: npm ci
+
+      - name: 🧪 Run Automated Tests (Jest & Supertest)
+        run: npm test -- --passWithNoTests
+        env:
+          JWT_SECRET: github_actions_test_jwt_secret_123
+          JWT_EXPIRE: 7d
+
+  # ─────────────────────────────────────────────────────────────
+  # JOB 2: FRONTEND BUILD CHECK
+  # ─────────────────────────────────────────────────────────────
+  frontend-build:
+    name: 🏗️ Frontend Build Check
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
+
+    steps:
+      - name: 📥 Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js Environment (v20)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+
+      - name: 📦 Install Frontend Dependencies
+        run: npm ci
+
+      - name: 🏗️ Verify Production Build (Vite)
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: https://shopnest-api.onrender.com/api
