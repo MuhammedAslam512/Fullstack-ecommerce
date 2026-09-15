@@ -2,6 +2,8 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize'); //  NEW: NoSQL Injection Defense
+const hpp = require('hpp');                               //  NEW: Parameter Pollution Defense
 const path = require('path');
 
 const logger = require('./middleware/logger');
@@ -21,20 +23,24 @@ const userRoutes = require('./routes/userRoutes');
 // GraphQL Imports
 const { ApolloServer } = require('@apollo/server');
 const { expressMiddleware } = require('@apollo/server/express4');
-const { ApolloServerPluginLandingPageLocalDefault } = require('@apollo/server/plugin/landingPage/default');
 const typeDefs = require('./graphql/typeDefs');
 const resolvers = require('./graphql/resolvers');
 
 const app = express();
 
-// Security Middleware (CSP disabled for Apollo Sandbox UI)
+// ------------------------------------------
+//  SECURITY HARDENING MIDDLEWARES
+// ------------------------------------------
+
+// 1. Helmet: Secure HTTP Headers
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: false, // Allows Apollo Sandbox & Swagger UI
     crossOriginEmbedderPolicy: false
   })
 );
 
+// 2. CORS Hardening
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
@@ -59,15 +65,46 @@ app.use(
   })
 );
 
-const limiter = rateLimit({
+// 3. Rate Limiters (Blocks spam early before processing body)
+const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100
+  max: 100,
+  message: {
+    success: false,
+    message: 'Too many requests from this IP. Please try again after 15 minutes.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
 });
-app.use('/api/', limiter);
+app.use('/api/', apiLimiter);
 
-// Body parser for REST API
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: {
+    success: false,
+    message: 'Too many authentication attempts. Please try again after 15 minutes.'
+  }
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
+
+//4. Body Parsers 
+app.use(express.json({ limit: '10mb' })); // Limit body size to prevent memory overload
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+
+// 5. 🛡️ SANITIZERS (Now req.body is parsed and ready to be cleaned safely!)
+app.use(mongoSanitize());
+
+// 6. HTTP Parameter Pollution Defense
+app.use(
+  hpp({
+    whitelist: ['price', 'ratings', 'category', 'brand', 'stock'] // Allowed duplicate parameters for filtering
+  })
+);
+
 
 // Static folders
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -80,7 +117,7 @@ app.use(logger);
 app.get(['/', '/api'], (req, res) => {
   res.json({
     success: true,
-    message: '🛒 E-Commerce API v1.0',
+    message: ' E-Commerce API v1.0 (Security Hardened)',
     endpoints: {
       auth: '/api/auth',
       categories: '/api/categories',
@@ -107,24 +144,17 @@ app.use('/api/users', userRoutes);
 const setupGraphQLAndErrors = async (app) => {
   const apolloServer = new ApolloServer({
     typeDefs,
-    resolvers,
-    plugins: [
-      ApolloServerPluginLandingPageLocalDefault({ embed: true }) // Enables Apollo Sandbox in browser
-    ]
+    resolvers
   });
 
   await apolloServer.start();
 
-  // 1. Mount /graphql FIRST
   app.use(
     '/graphql',
     cors(),
     express.json(),
-    // 👇 Fix: ensures req.body is defined on GET requests so Apollo doesn't throw 500
     (req, res, next) => {
-      if (req.body === undefined) {
-        req.body = {};
-      }
+      if (!req.body) req.body = {};
       next();
     },
     expressMiddleware(apolloServer, {
@@ -134,9 +164,9 @@ const setupGraphQLAndErrors = async (app) => {
     })
   );
 
-  console.log('⚡ GraphQL Apollo Server mounted on /graphql');
+  console.log(' GraphQL Apollo Server mounted on /graphql');
 
-  // 2. Mount Error Handlers LAST (After /graphql!)
+  // Error Handlers MUST be last
   app.use(notFound);
   app.use(errorHandler);
 };
