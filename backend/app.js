@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize'); //  NEW: NoSQL Injection Defense
 const hpp = require('hpp');                               //  NEW: Parameter Pollution Defense
 const path = require('path');
+const setupSwagger = require('./config/swagger')
 
 const logger = require('./middleware/logger');
 const notFound = require('./middleware/notFound');
@@ -96,7 +97,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 
 // 5. 🛡️ SANITIZERS (Now req.body is parsed and ready to be cleaned safely!)
-app.use(mongoSanitize());
+// ✅ Node 22 Compatible In-Place NoSQL Injection Sanitizer
+app.use((req, res, next) => {
+  if (req.body) mongoSanitize.sanitize(req.body);
+  if (req.params) mongoSanitize.sanitize(req.params);
+  if (req.query) mongoSanitize.sanitize(req.query);
+  next();
+});
 
 // 6. HTTP Parameter Pollution Defense
 app.use(
@@ -142,6 +149,9 @@ app.use('/api/users', userRoutes);
 
 // Function to setup GraphQL AND Error Handlers in correct order
 const setupGraphQLAndErrors = async (app) => {
+
+  setupSwagger(app)
+
   const apolloServer = new ApolloServer({
     typeDefs,
     resolvers
