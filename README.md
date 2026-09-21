@@ -1,47 +1,59 @@
-# 🛒 ShopNest — Production Fullstack E-Commerce Web Application
+# 🛒 ShopNest — Production Fullstack E-Commerce Platform
 
-A feature-complete, responsive E-Commerce application built with **React 18**, **Node.js**, **Express**, **MongoDB**, **Stripe Payments**, and **WebSockets**.
-
----
-
-## 🌐 Live Application Links
-
-- 🖥️ **Live Web Application (Vercel):** [https://shopnest-app.vercel.app](https://your-app.vercel.app)
-- ⚙️ **Live REST API (Render):** [https://shopnest-api.onrender.com](https://your-api.onrender.com)
+A production-ready, feature-complete Fullstack E-Commerce Application & Microservices Ecosystem built with **React 18**, **Node.js**, **Express**, **MongoDB**, **PostgreSQL (Prisma ORM)**, **Redis**, **BullMQ**, **Docker**, and **Swagger UI**.
 
 ---
 
-## 🛠️ Fullstack Tech Stack
+## 🌐 Live Production Links
+
+- 🖥️ **Live Web Application (Vercel):** [https://donglify-app.vercel.app](https://donglify-app-git-main-muhammed-aslams-projects-5c73c935.vercel.app/)
+- ⚙️ **Live REST API (Render):** [https://donglify-ecommerce-api.onrender.com](https://donglify-ecommerce-api.onrender.com)
+- 📜 **Interactive Swagger API Docs:** [https://donglify-ecommerce-api.onrender.com/api-docs](https://donglify-ecommerce-api.onrender.com/api-docs)
+- 🌐 **GraphQL Apollo Sandbox:** [https://donglify-ecommerce-api.onrender.com/graphql](https://donglify-ecommerce-api.onrender.com/graphql)
+---
+
+## 🛠️ Complete Tech Stack
 
 ### **Frontend (React)**
 - **Framework:** React 18 (Vite)
 - **Routing:** React Router DOM v6
 - **State Management:** React Context API (`AuthContext`, `CartContext`, `SocketContext`)
-- **HTTP Client:** Axios (with automatic JWT Interceptors)
+- **HTTP Client:** Axios (Centralized with JWT Request/Response Interceptors)
 - **Payments UI:** Stripe Elements (`@stripe/react-stripe-js`)
 - **Real-Time:** Socket.io Client
+- **Analytics:** Recharts (Area & Bar Charts)
 - **Icons:** Lucide React
 
 ### **Backend (Node.js & Express)**
-- **Runtime:** Node.js & Express.js
-- **Database:** MongoDB Atlas (Mongoose ODM)
+- **Runtime & Framework:** Node.js (v20) & Express.js
+- **Databases:** 
+  - **NoSQL:** MongoDB Atlas (Mongoose ODM)
+  - **SQL:** PostgreSQL (Prisma ORM on Neon.tech Cloud)
+- **Caching & Queues:** Upstash Cloud Redis & BullMQ Background Job Workers
 - **Authentication:** JWT (JSON Web Tokens), Bcrypt.js, Passport.js (Google OAuth 2.0)
+- **API Specs:** GraphQL (Apollo Server v4) & REST (OpenAPI 3.0 via Swagger UI)
 - **Payments:** Stripe API (Payment Intents & Webhooks)
-- **Real-Time:** Socket.io Engine (Live Order Alerts & Chat Rooms)
-- **File Uploads:** Multer
-- **Security:** Helmet, CORS, Express-Rate-Limit
+- **Real-Time:** Socket.io Engine (Live Order Alerts & Support Rooms)
+- **Emails:** Nodemailer (SMTP / Gmail) & BullMQ Async Queue
+- **File Uploads:** Multer (Disk Storage)
+- **Security:** Helmet, CORS, Express-Rate-Limit, Express-Mongo-Sanitize, HPP
+
+### **DevOps & Testing**
+- **Containerization:** Docker & Docker Compose (Multi-container orchestration)
+- **Automated Testing:** Jest & Supertest (Unit & Integration Tests)
+- **In-Memory Testing DB:** `mongodb-memory-server`
+- **CI/CD Pipeline:** GitHub Actions Automated Workflows
 
 ---
 
-## ✨ Core Key Features
+## 📅 30-Day Curriculum & Features Completed
 
-- 🔐 **Authentication & Security:** JWT-based user login, registration, password hashing, and Google OAuth 2.0 SSO.
-- 🛍️ **Product Catalog & Controls:** Server-side pagination, multi-field category filtering, search, and price range filters.
-- 🛒 **Persistent Shopping Cart:** Fully synchronized with MongoDB for logged-in users, featuring quantity adjustments and subtotal calculation.
-- 💳 **Stripe Payment Gateway:** Integrated Checkout flow using Stripe Payment Intents, test card processing, and order confirmation.
-- 📦 **Order Tracking & Management:** Order history dashboard for customers with status tracking (`Pending`, `Processing`, `Shipped`, `Delivered`).
-- ⭐️ **Product Reviews & Ratings:** Star-rating submission system (1-5 stars) with customer review listings.
-- ⚡ **Real-Time WebSockets:** Live order notification alerts for admins and real-time support chat room capabilities.
+| Week | Days | Key Modules & Accomplishments |
+| :--- | :--- | :--- |
+| **Week 1** | **Days 01–07** | Node.js Core, Express Architecture, MongoDB Atlas, JWT Auth, Multer File Uploads, Security (Helmet, CORS, Rate-Limiting), Full E-Commerce APIs, & Render Deployment. |
+| **Week 2** | **Days 08–14** | Nodemailer Password Recovery, Google OAuth 2.0 (Passport.js), Stripe Card Payments & Webhooks, Socket.io WebSockets, PostgreSQL & Prisma ORM, Jest/Supertest Automated Testing, & Docker/Docker Compose. |
+| **Week 3** | **Days 15–21** | Monorepo Setup (`backend/` + `frontend/`), Vite React SPA, Centralized Axios Client, Protected Route Guards, Product Catalog Filters, Shopping Cart DB Sync, Stripe UI Checkout, Customer Order Tracking, Star Reviews, & Vercel Deployment. |
+| **Week 4** | **Days 22–30** | Full Admin Control Panel (Products, Orders, Categories, Users), MongoDB Aggregation & Recharts Sales Analytics, Redis Caching, BullMQ Background Job Workers, GraphQL Apollo Server, Microservices Architecture, GitHub Actions CI/CD Pipeline, Security Hardening (NoSQL Injection Defense), & OpenAPI 3.0 Swagger Docs (`/api-docs`). |
 
 ---
 
@@ -49,23 +61,33 @@ A feature-complete, responsive E-Commerce application built with **React 18**, *
 
 ```text
 Fullstack-ecommerce/
-├── 📁 backend/                # Node.js + Express REST API & WebSockets
-│   ├── 📁 config/             # DB, Passport & Socket setup
-│   ├── 📁 controllers/        # Business logic for Auth, Products, Cart, Orders, Payments
-│   ├── 📁 middleware/         # Auth guards, Multer upload, Rate limits
-│   ├── 📁 models/             # Mongoose schemas (User, Product, Cart, Order, Review)
-│   ├── 📁 routes/             # Express REST endpoints
-│   ├── 📄 app.js              # Express configuration
-│   └── 📄 server.js           # Server listener
+├── 📁 .github/
+│   └── 📁 workflows/
+│       └── 📄 ci.yml            # GitHub Actions CI/CD Pipeline
 │
-├── 📁 frontend/               # React + Vite Single Page Application
+├── 📁 backend/                  # Node.js + Express REST & GraphQL API
+│   ├── 📁 config/               # DB, Redis, Passport, Socket & Swagger Setup
+│   ├── 📁 controllers/          # Business logic for Auth, Users, Products, Cart, Orders, Payments, Reviews
+│   ├── 📁 graphql/              # GraphQL TypeDefs & Resolvers
+│   ├── 📁 middleware/           # Auth guards, Cache, Upload, Security Sanitizers
+│   ├── 📁 models/               # Mongoose Schemas (User, Product, Cart, Order, Review, Category)
+│   ├── 📁 queues/               # BullMQ Producer Queues
+│   ├── 📁 routes/               # Express REST Endpoints
+│   ├── 📁 utils/                # Nodemailer Helper
+│   ├── 📁 workers/              # BullMQ Background Job Workers
+│   ├── 📄 app.js                # Express App & Security Configuration
+│   ├── 📄 server.js             # HTTP, WebSockets & BullMQ Listener
+│   └── 📄 Dockerfile            # Production Docker Image Configuration
+│
+├── 📁 frontend/                 # React 18 + Vite SPA
 │   ├── 📁 src/
-│   │   ├── 📁 api/            # Centralized Axios client
-│   │   ├── 📁 components/     # Reusable UI components (Navbar, ProductCard, Modals)
-│   │   ├── 📁 context/        # Auth, Cart, and Socket context providers
-│   │   ├── 📁 pages/          # Products, Cart, Checkout, Profile, Orders
-│   │   ├── 📁 routes/         # ProtectedRoute & AdminRoute guards
-│   │   └── 📄 App.jsx         # Main router configuration
-│   └── 📄 vercel.json         # Vercel SPA routing configuration
+│   │   ├── 📁 api/              # Centralized Axios Client
+│   │   ├── 📁 components/       # Navbar, ProductCards, Modals, Admin Charts, Sidebar
+│   │   ├── 📁 context/          # AuthContext, CartContext, SocketContext
+│   │   ├── 📁 pages/            # Products, Cart, Checkout, Profile, Orders, Admin Panel
+│   │   └── 📁 routes/           # ProtectedRoute & AdminRoute Guards
+│   └── 📄 vercel.json           # Vercel SPA Routing Configuration
 │
-└── 📄 README.md               # Master documentation
+├── 📁 microservices-demo/       # Decoupled Auth (5001) & Order (5002) Services
+├── 📄 docker-compose.yml        # Multi-Container Orchestration (API + Mongo + Postgres)
+└── 📄 README.md                 # Master Repository Documentation
