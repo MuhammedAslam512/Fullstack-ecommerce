@@ -58,5 +58,15 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// DATABASE INDEXES
+
+
+// 1. Compound Index for User Order History (My Orders Page)
+// Used in: Order.find({ user: req.user.id }).sort('-createdAt')
+orderSchema.index({ user: 1, createdAt: -1 });
+
+// 2. Compound Index for Admin Analytics & Status Queries
+orderSchema.index({ paymentStatus: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Order', orderSchema);
 

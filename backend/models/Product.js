@@ -54,4 +54,23 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+
+
+// DATABASE INDEXES (QUERY OPTIMIZATION)
+
+// 1. Text Index for Full-Text Search (Fast name & brand keyword searching!)
+productSchema.index({ name: 'text', brand: 'text', description: 'text' });
+
+// 2. Compound Index for Category Filtering + Price Sorting (ESR Rule)
+// Used in: GET /api/products?category=123&sort=-price
+productSchema.index({ category: 1, price: -1 });
+
+// 3. Compound Index for Price Range Queries + Date Sorting
+// Used in: GET /api/products?minPrice=1000&maxPrice=5000
+productSchema.index({ price: 1, createdAt: -1 });
+
+// 4. Index on Active Products
+productSchema.index({ isActive: 1 });
+
+
 module.exports = mongoose.model('Product', productSchema);
