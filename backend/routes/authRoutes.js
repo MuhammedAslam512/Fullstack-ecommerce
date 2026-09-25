@@ -8,13 +8,21 @@ const {
   forgotPassword,
   resetPassword,
   updatePassword,
-  uploadAvatar
+  uploadAvatar,
+  refreshToken,
+  logout
 } = require('../controllers/authController');
 
 const { protect } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const { uploadAvatarCloud } = require('../middleware/cloudUpload');
+const customRateLimiter = require('../middleware/rateLimiter');
 
-
+const strictAuthLimiter = customRateLimiter({
+  windowSizeInSeconds: 300, // 5 Minutes
+  maxRequests: 5,
+  keyPrefix: 'auth_strict'
+});
 
 // Public routes
 /**
@@ -46,7 +54,7 @@ const upload = require('../middleware/upload');
  *       400:
  *         description: Validation error or Email already exists
  */
-router.post('/register', register);
+router.post('/register', strictAuthLimiter, register);
 
 /**
  * @swagger
@@ -74,7 +82,7 @@ router.post('/register', register);
  *       401:
  *         description: Invalid email or password
  */
-router.post('/login', login);
+router.post('/login', strictAuthLimiter, login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 
@@ -95,6 +103,14 @@ router.post('/reset-password', resetPassword);
  */
 router.get('/me', protect, getMe);
 router.put('/updatepassword', protect, updatePassword);
-router.post('/upload-avatar', protect, upload.single('avatar'), uploadAvatar);
+// router.post('/upload-avatar', protect, upload.single('avatar'), uploadAvatar);
+router.post('/refresh-token', refreshToken);
+router.post('/logout', protect, logout);
+router.post(
+  '/upload-avatar',
+  protect,
+  uploadAvatarCloud.single('avatar'),
+  uploadAvatar
+);
 
 module.exports = router;

@@ -6,10 +6,12 @@ const mongoSanitize = require('express-mongo-sanitize'); //  NEW: NoSQL Injectio
 const hpp = require('hpp');                               //  NEW: Parameter Pollution Defense
 const path = require('path');
 const setupSwagger = require('./config/swagger')
+const cookieParser = require('cookie-parser');
 
 const logger = require('./middleware/logger');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
+const morganMiddleware = require('./middleware/morganLogger')
 
 // Import all routes
 const authRoutes = require('./routes/authRoutes');
@@ -94,10 +96,10 @@ app.use('/api/auth/register', authLimiter);
 //4. Body Parsers 
 app.use(express.json({ limit: '10mb' })); // Limit body size to prevent memory overload
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
-
-// 5. 🛡️ SANITIZERS (Now req.body is parsed and ready to be cleaned safely!)
-// ✅ Node 22 Compatible In-Place NoSQL Injection Sanitizer
+// 5. SANITIZERS (Now req.body is parsed and ready to be cleaned safely!)
+//  Node 22 Compatible In-Place NoSQL Injection Sanitizer
 app.use((req, res, next) => {
   if (req.body) mongoSanitize.sanitize(req.body);
   if (req.params) mongoSanitize.sanitize(req.params);
@@ -118,7 +120,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Logger
-app.use(logger);
+app.use(morganMiddleware);
 
 // Home route
 app.get(['/', '/api'], (req, res) => {

@@ -6,6 +6,7 @@ const { app, setupGraphQLAndErrors } = require('./app'); // Import helper
 const connectDB = require('./config/db');
 const { initSocket } = require('./config/socket');
 const initEmailWorker = require('./workers/emailWorker');
+const logger = require('./config/logger')
 
 const PORT = process.env.PORT || 5000;
 
@@ -25,11 +26,11 @@ const startServer = async () => {
 
     // 4. Start Server
     server.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`🌐 GraphQL Playground available at http://localhost:${PORT}/graphql`);
+      logger.info(`🚀 Server running on http://localhost:${PORT}`);
+      logger.info(`🌐 GraphQL Playground available at http://localhost:${PORT}/graphql`);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    logger.error('❌ Failed to start server:', error);
     process.exit(1);
   }
 };

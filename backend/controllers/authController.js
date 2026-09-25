@@ -7,20 +7,150 @@ const User = require('../models/User');
 const { addWelcomeEmailJob, addResetPasswordEmailJob } = require('../queues/emailQueue');
 
 // ── Helper: Create token & send response ──
-const sendTokenResponse = (user, statusCode, res, message) => {
-  const token = user.generateToken();
+// const sendTokenResponse = (user, statusCode, res, message) => {
+//   const token = user.generateToken();
 
-  res.status(statusCode).json({
-    success: true,
-    message,
-    token,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role
+//   res.status(statusCode).json({
+//     success: true,
+//     message,
+//     token,
+//     user: {
+//       id: user._id,
+//       name: user.name,
+//       email: user.email,
+//       role: user.role
+//     }
+//   });
+// };
+
+// ── Helper: Send Dual Tokens (Access Token in JSON + Refresh Token in HttpOnly Cookie) ──
+const sendDualTokenResponse = async (user, statusCode, res, message) => {
+  // 1. Generate Tokens
+  const accessToken = user.generateAccessToken();
+  const refreshToken = user.generateRefreshToken();
+
+  // 2. Save Refresh Token in Database for Rotation Tracking
+  user.refreshTokens = user.refreshTokens || [];
+  user.refreshTokens.push({ token: refreshToken });
+  await user.save({ validateBeforeSave: false });
+
+  // 3. Configure HttpOnly Cookie Options (XSS Protected!)
+  const cookieOptions = {
+    httpOnly: true, // Cannot be accessed by JavaScript (XSS Defense)
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // CSRF Protection
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 Days in milliseconds
+  };
+
+  // 4. Send Cookie + JSON Response
+  res
+    .status(statusCode)
+    .cookie('refreshToken', refreshToken, cookieOptions)
+    .json({
+      success: true,
+      message,
+      accessToken, // Short-lived 15m token
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+};
+
+// ─────────────────────────────────────────────────────────────
+// REFRESH TOKEN ROTATION
+// POST /api/auth/refresh-token
+// ─────────────────────────────────────────────────────────────
+const refreshToken = async (req, res) => {
+
+  try {
+    // 1. Get Refresh Token from HttpOnly Cookie or Request Body
+    const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+
+    if (!incomingRefreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token missing. Please log in again.'
+      });
     }
-  });
+
+    // 2. Verify Refresh Token
+    let decoded;
+    try {
+      decoded = jwt.verify(
+        incomingRefreshToken,
+        process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET + '_refresh'
+      );
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token.'
+      });
+    }
+
+    // 3. Find User
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'User no longer exists.' });
+    }
+
+    // 4. REUSE DETECTION: Check if token exists in active list
+    const tokenExists = user.refreshTokens.some(t => t.token === incomingRefreshToken);
+
+    if (!tokenExists) {
+      // ⚠️ SECURITY BREACH DETECTED: Token reuse attempt!
+      // Revoke ALL refresh tokens for this user!
+      user.refreshTokens = [];
+      await user.save({ validateBeforeSave: false });
+
+      res.clearCookie('refreshToken');
+      return res.status(403).json({
+        success: false,
+        message: 'Security breach detected: Reused refresh token. All sessions revoked.'
+      });
+    }
+
+    // 5. ROTATION: Remove old token from DB
+    user.refreshTokens = user.refreshTokens.filter(t => t.token !== incomingRefreshToken);
+
+    // 6. Issue NEW Dual Tokens
+    await sendDualTokenResponse(user, 200, res, 'Token refreshed successfully! 🔄');
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────
+// LOGOUT (Clear Cookie & Remove Token from DB)
+// POST /api/auth/logout
+// ─────────────────────────────────────────────────────────────
+const logout = async (req, res) => {
+  try {
+    const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
+
+    if (incomingRefreshToken && req.user) {
+      // Remove token from database
+      req.user.refreshTokens = req.user.refreshTokens.filter(t => t.token !== incomingRefreshToken);
+      await req.user.save({ validateBeforeSave: false });
+    }
+
+    // Clear HttpOnly Cookie
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully! Cookie cleared. 🚪'
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 };
 
 // ─────────────────────────────────────────
@@ -56,7 +186,8 @@ const register = async (req, res) => {
     addWelcomeEmailJob(user);
 
     // ⚡ 2. SEND INSTANT HTTP RESPONSE BACK TO CLIENT:
-    sendTokenResponse(user, 201, res, 'Registered successfully! 🎉');
+    // sendTokenResponse(user, 201, res, 'Registered successfully! 🎉');
+    await sendDualTokenResponse(user, 201, res, 'Registered successfully!!')
 
   } catch (error) {
     console.error('Register Error:', error);
@@ -109,7 +240,8 @@ const login = async (req, res) => {
       });
     }
 
-    sendTokenResponse(user, 200, res, 'Logged in successfully! ✅');
+    // sendTokenResponse(user, 200, res, 'Logged in successfully! ✅');
+    await sendDualTokenResponse(user, 200, res, 'Logged in successfully')
 
   } catch (error) {
     console.error('Login Error:', error);
@@ -281,6 +413,8 @@ const uploadAvatar = async (req, res) => {
       });
     }
 
+    const cloudImageUrl = req.file.path;
+
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { avatar: req.file.path },
@@ -289,11 +423,10 @@ const uploadAvatar = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Avatar uploaded! ✅',
+      message: 'Avatar uploaded! to cloud Storage successfully✅',
       data: {
         avatar: user.avatar,
-        filename: req.file.filename,
-        size: req.file.size
+        publicId : req.file.filename
       }
     });
 
@@ -313,5 +446,7 @@ module.exports = {
   forgotPassword,
   resetPassword,
   updatePassword,
-  uploadAvatar
+  uploadAvatar,
+  refreshToken,
+  logout
 };

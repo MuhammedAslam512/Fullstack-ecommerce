@@ -11,6 +11,7 @@ const {
 const { protect, authorize } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { cacheMiddleware} = require('../middleware/cache')
+const { uploadProductCloud } = require('../middleware/cloudUpload');
 
 /**
  * @swagger
@@ -85,11 +86,19 @@ router.put('/:id', protect, authorize('admin'), updateProduct);
 router.delete('/:id', protect, authorize('admin'), deleteProduct);
 
 // Upload images (up to 5)
+// router.post(
+//   '/:id/images',
+//   protect,
+//   authorize('admin'),
+//   upload.array('images', 5),
+//   uploadProductImages
+// );
+
 router.post(
   '/:id/images',
   protect,
   authorize('admin'),
-  upload.array('images', 5),
+  uploadProductCloud.array('images', 5), // ← Uploads up to 5 images to Cloudinary!
   uploadProductImages
 );
 

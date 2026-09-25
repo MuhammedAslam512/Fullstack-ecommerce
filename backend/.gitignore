@@ -5,3 +5,7 @@ node_modules/
 # Ignore uploaded files but keep folder
 uploads/*
 !uploads/.gitkeep
+
+# Logs
+logs/
+*.log

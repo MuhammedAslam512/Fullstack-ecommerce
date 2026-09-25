@@ -66,7 +66,14 @@ const userSchema = new mongoose.Schema(
     resetPasswordExpire: {
       type: Date,
       select: false
-    }
+    },
+    
+    refreshTokens: [
+      {
+        token: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now, expires: '7d' } // Auto-cleans expired tokens after 7 days
+      }
+    ],
   },
   { timestamps: true }
 );
@@ -119,6 +126,26 @@ userSchema.methods.getResetPasswordToken = function () {
 
   // 4. Return the UNHASHED token (to send in the email link)
   return resetToken;
+};
+
+// TOKEN GENERATION METHODS (DUAL-TOKEN SYSTEM)
+
+// 1. Generate Short-Lived Access Token (15 minutes)
+userSchema.methods.generateAccessToken = function () {
+  return jwt.sign(
+    { id: this._id, role: this.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '15m' } // 15 Minutes
+  );
+};
+
+// 2. Generate Long-Lived Refresh Token (7 days)
+userSchema.methods.generateRefreshToken = function () {
+  return jwt.sign(
+    { id: this._id },
+    process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET + '_refresh',
+    { expiresIn: '7d' } // 7 Days
+  );
 };
 
 const User = mongoose.model('User', userSchema);
