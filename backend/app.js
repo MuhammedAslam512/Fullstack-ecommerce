@@ -8,6 +8,7 @@ const path = require('path');
 const setupSwagger = require('./config/swagger')
 const cookieParser = require('cookie-parser');
 
+
 const logger = require('./middleware/logger');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
@@ -22,6 +23,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const userRoutes = require('./routes/userRoutes');
+const uploadRoutes = require('./routes/uploadRoutes')
 
 // GraphQL Imports
 const { ApolloServer } = require('@apollo/server');
@@ -148,6 +150,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/uploads', uploadRoutes)
 
 // Function to setup GraphQL AND Error Handlers in correct order
 const setupGraphQLAndErrors = async (app) => {
