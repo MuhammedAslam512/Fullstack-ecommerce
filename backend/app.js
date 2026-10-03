@@ -7,12 +7,16 @@ const hpp = require('hpp');                               //  NEW: Parameter Pol
 const path = require('path');
 const setupSwagger = require('./config/swagger')
 const cookieParser = require('cookie-parser');
+const sseRoutes = require('./routes/sseRoutes')
+const session = require('express-session');
+const passport = require('./config/passport')
 
 
 const logger = require('./middleware/logger');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
 const morganMiddleware = require('./middleware/morganLogger')
+const {csrfProtection} = require('./middleware/csrf')
 
 // Import all routes
 const authRoutes = require('./routes/authRoutes');
@@ -99,6 +103,17 @@ app.use('/api/auth/register', authLimiter);
 app.use(express.json({ limit: '10mb' })); // Limit body size to prevent memory overload
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'super_secret_session_key_123',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: process.env.NODE_ENV === 'production' }
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // 5. SANITIZERS (Now req.body is parsed and ready to be cleaned safely!)
 //  Node 22 Compatible In-Place NoSQL Injection Sanitizer
@@ -123,6 +138,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Logger
 app.use(morganMiddleware);
+
+app.use(csrfProtection);
+
+app.use('/api/notification', sseRoutes)
 
 // Home route
 app.get(['/', '/api'], (req, res) => {

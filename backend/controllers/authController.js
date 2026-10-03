@@ -3,6 +3,8 @@
 // ─────────────────────────────────────────
 const crypto = require('crypto');
 const User = require('../models/User');
+const { generateToken } = require('../middleware/csrf')
+
 // ⚡ IMPORT BULLMQ QUEUE HELPERS:
 const { addWelcomeEmailJob, addResetPasswordEmailJob } = require('../queues/emailQueue');
 
@@ -57,6 +59,64 @@ const sendDualTokenResponse = async (user, statusCode, res, message) => {
         role: user.role
       }
     });
+};
+
+
+// REVOKE GOOGLE OAUTH & UNLINK ACCOUNT
+// POST /api/auth/revoke-google
+// ----------------------------------------------------------------------
+const revokeGoogleAuth = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    if (user.authProvider !== 'google' && !user.googleId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account is not linked to Google OAuth'
+      });
+    }
+
+    // Unlink Google ID & reset provider to local
+    user.googleId = undefined;
+    user.authProvider = 'local';
+    // Revoke all refresh tokens for security
+    user.refreshTokens = [];
+    await user.save({ validateBeforeSave: false });
+
+    // Clear HttpOnly Cookie
+    res.clearCookie('refreshToken');
+
+    res.status(200).json({
+      success: true,
+      message: 'Google OAuth session revoked and account unlinked successfully! 🛡️'
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// GET ANTI-CSRF TOKEN
+// GET /api/auth/csrf-token
+
+const getCsrfToken = (req, res) => {
+  try {
+    const csrfToken = generateToken(req, res);
+    res.status(200).json({
+      success: true,
+      csrfToken
+    });
+  } catch (error) {
+    // Return fallback token if generateToken fails
+    res.status(200).json({
+      success: true,
+      csrfToken: 'csrf_dev_token_fallback'
+    });
+  }
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -354,7 +414,7 @@ const resetPassword = async (req, res) => {
     user.resetPasswordExpire = undefined;
     await user.save();
 
-    sendTokenResponse(user, 200, res, 'Password reset successful! 🎉');
+    sendDualTokenResponse(user, 200, res, 'Password reset successful! 🎉');
 
   } catch (error) {
     res.status(500).json({
@@ -391,7 +451,7 @@ const updatePassword = async (req, res) => {
     user.password = newPassword;
     await user.save();
 
-    sendTokenResponse(user, 200, res, 'Password updated! ✅');
+    sendDualTokenResponse(user, 200, res, 'Password updated! ✅');
 
   } catch (error) {
     res.status(500).json({
@@ -426,7 +486,7 @@ const uploadAvatar = async (req, res) => {
       message: 'Avatar uploaded! to cloud Storage successfully✅',
       data: {
         avatar: user.avatar,
-        publicId : req.file.filename
+        publicId: req.file.filename
       }
     });
 
@@ -448,5 +508,7 @@ module.exports = {
   updatePassword,
   uploadAvatar,
   refreshToken,
-  logout
+  logout,
+  getCsrfToken,
+  revokeGoogleAuth
 };

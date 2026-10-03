@@ -1,0 +1,20 @@
+{
+  "name": "fullstack-ecommerce-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue.bold,green.bold\" \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "build": "turbo run build",
+    "test": "npm test --workspace=backend",
+    "clean": "turbo run clean && rimraf node_modules"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5",
+    "turbo": "^2.11.6"
+  }
+}
+

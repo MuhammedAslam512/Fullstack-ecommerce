@@ -2,6 +2,7 @@ const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const { getIO } = require('../config/socket')
+const { broadcastSSEEvent } = require('./sseController')
 
 // CREATE order (from cart)
 exports.createOrder = async (req, res) => {
@@ -121,6 +122,13 @@ exports.updateOrderStatus = async (req, res) => {
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
     }
+    // BROADCAST REAL-TIME SSES EVENT TO ALL CONNECTED BROWSERS!
+    broadcastSSEEvent('order_status_update', {
+      orderId: order.id,
+      orderStatus: order.orderStatus,
+      message: `Order #${order.id} status updated to ${order.orderStatus}`,
+      updatedAt: new Date().toLocaleTimeString()
+    })
 
     res.json({ success: true, message: 'Status updated!', data: order });
   } catch (error) {

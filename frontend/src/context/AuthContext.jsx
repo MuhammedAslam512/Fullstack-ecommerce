@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// GLOBAL AUTHENTICATION CONTEXT
+// GLOBAL AUTHENTICATION CONTEXT (Supports Access Tokens)
 // ─────────────────────────────────────────────────────────────
 import { createContext, useState, useEffect, useContext } from 'react';
 import api from '../api/axios';
@@ -14,16 +14,19 @@ export const AuthProvider = ({ children }) => {
   // Load user on startup if token exists
   useEffect(() => {
     const loadUser = async () => {
-      if (token) {
+      const savedToken = localStorage.getItem('token');
+      if (savedToken && savedToken !== 'undefined') {
         try {
           const res = await api.get('/auth/me');
           if (res.data.success) {
-            setUser(res.data.data);
+            setUser(res.data.data || res.data.user);
           }
         } catch (error) {
           console.error('Failed to load user session:', error);
           logout();
         }
+      } else {
+        logout();
       }
       setLoading(false);
     };
@@ -35,10 +38,13 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     const res = await api.post('/auth/register', userData);
     if (res.data.success) {
-      const { token, user } = res.data;
-      localStorage.setItem('token', token);
-      setToken(token);
-      setUser(user);
+      // ⚡ Handle BOTH accessToken (Dual-Token) or token (Single Token):
+      const authToken = res.data.accessToken || res.data.token;
+      const authUser = res.data.user;
+
+      localStorage.setItem('token', authToken);
+      setToken(authToken);
+      setUser(authUser);
       return res.data;
     }
   };
@@ -47,10 +53,13 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     const res = await api.post('/auth/login', credentials);
     if (res.data.success) {
-      const { token, user } = res.data;
-      localStorage.setItem('token', token);
-      setToken(token);
-      setUser(user);
+      // ⚡ Handle BOTH accessToken (Dual-Token) or token (Single Token):
+      const authToken = res.data.accessToken || res.data.token;
+      const authUser = res.data.user;
+
+      localStorage.setItem('token', authToken);
+      setToken(authToken);
+      setUser(authUser);
       return res.data;
     }
   };
@@ -58,6 +67,7 @@ export const AuthProvider = ({ children }) => {
   // ── LOGOUT USER ─────────────────────────────────────────────
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setToken('');
     setUser(null);
   };
@@ -81,4 +91,3 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-

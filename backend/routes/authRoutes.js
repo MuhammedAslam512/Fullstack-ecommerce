@@ -1,4 +1,6 @@
 const express = require('express');
+require('../config/passport')
+const passport = require('passport');
 const router = express.Router();
 
 const {
@@ -10,7 +12,9 @@ const {
   updatePassword,
   uploadAvatar,
   refreshToken,
-  logout
+  logout,
+  getCsrfToken,
+  revokeGoogleAuth
 } = require('../controllers/authController');
 
 const { protect } = require('../middleware/auth');
@@ -85,6 +89,26 @@ router.post('/register', strictAuthLimiter, register);
 router.post('/login', strictAuthLimiter, login);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
+router.get('/csrf-token', getCsrfToken)
+
+router.get(
+  '/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: '/login' }),
+  async (req, res) => {
+    // Generate JWT Access Token for Google user
+    const accessToken = req.user.generateAccessToken();
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    
+    // Redirect to React Frontend with token!
+    res.redirect(`${clientUrl}/login?token=${accessToken}`);
+  }
+);
+
 
 // Protected routes
 /**
@@ -100,7 +124,7 @@ router.post('/reset-password', resetPassword);
  *         description: User profile retrieved
  *       401:
  *         description: Unauthorized token
- */
+*/
 router.get('/me', protect, getMe);
 router.put('/updatepassword', protect, updatePassword);
 // router.post('/upload-avatar', protect, upload.single('avatar'), uploadAvatar);
@@ -112,5 +136,6 @@ router.post(
   uploadAvatarCloud.single('avatar'),
   uploadAvatar
 );
+router.post('/revoke-google', protect, revokeGoogleAuth)
 
 module.exports = router;

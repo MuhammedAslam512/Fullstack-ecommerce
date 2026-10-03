@@ -20,6 +20,7 @@ import AdminCategories from './pages/admin/AdminCategories';
 import AdminUsers from './pages/admin/AdminUsers';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import SSENotifications from './components/SSENotifications';
 
 function LiveToastNotification() {
   const { liveNotification } = useSocket();
@@ -57,6 +58,7 @@ export default function App() {
     <BrowserRouter>
       <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
         <Navbar />
+        <SSENotifications />
         <LiveToastNotification />
         <Routes>
           {/* Public Routes */}
@@ -65,7 +67,7 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          
+
           {/* Protected User Routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/profile" element={<Profile />} />

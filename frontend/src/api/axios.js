@@ -5,17 +5,45 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
+let csrfTokenCache = '';
+
+//Fetch CSRF Token from Backend
+export const fetchCsrfToken = async () => {
+  try {
+    const res = await api.get('/auth/csrf-token');
+    if (res.data?.csrfToken) {
+      csrfTokenCache = res.data.csrfToken;
+    }
+  } catch (error) {
+    console.error('Failed to fetch CSRF token:', err.message)
+  }
+}
+
+//Initialize CSRF Token on startup
+fetchCsrfToken();
+
 // ── REQUEST INTERCEPTOR: Automatically attach JWT Token ──────
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    if (['post', 'put', 'delete', 'patch'].includes(config.method.toLowerCase())) {
+      if (!csrfTokenCache) {
+        await fetchCsrfToken();
+      }
+
+      if(csrfTokenCache) {
+        config.headers['x-csrf-token'] = csrfTokenCache;
+      }
     }
     return config;
   },
