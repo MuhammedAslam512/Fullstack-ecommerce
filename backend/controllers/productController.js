@@ -146,3 +146,143 @@ exports.uploadProductImages = async (req, res) => {
   }
 };
 
+// -------------------------------------------------------------
+// FACETED SEARCH & MULTI-STAGE AGGREGATION PIPELINE
+// GET /api/products/faceted-search
+// -------------------------------------------------------------
+exports.getFacetedProducts = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 8;
+    const skip = (page - 1) * limit;
+
+    // 1. Initial Match Stage (Keyword Search + Active Products)
+    let matchStage = { isActive: true };
+
+    if (req.query.search) {
+      const regex = new RegExp(req.query.search, 'i');
+      matchStage.$or = [{ name: regex }, { brand: regex }, { description: regex }];
+    }
+
+    if (req.query.minPrice || req.query.maxPrice) {
+      matchStage.price = {};
+      if (req.query.minPrice) matchStage.price.$gte = parseFloat(req.query.minPrice);
+      if (req.query.maxPrice) matchStage.price.$lte = parseFloat(req.query.maxPrice);
+    }
+
+    // 2. Execute $facet Aggregation Pipeline
+    const results = await Product.aggregate([
+      // Stage 1: Filter products matching search criteria
+      { $match: matchStage },
+
+      // Stage 2: $facet runs parallel sub-pipelines
+      {
+        $facet: {
+          // Sub-pipeline A: Paginated Product Data + Joined Category Info ($lookup)
+          products: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $lookup: {
+                from: 'categories',        // Collection name
+                localField: 'category',    // Field in Product
+                foreignField: '_id',       // Field in Category
+                as: 'categoryDetails'      // Output array
+              }
+            },
+            { $unwind: { path: '$categoryDetails', preserveNullAndEmptyArrays: true } }
+          ],
+
+          // Sub-pipeline B: Calculate Total Product Count
+          totalCount: [
+            { $count: 'count' }
+          ],
+
+          // Sub-pipeline C: Calculate Brand Counts for Sidebar Filters
+          brandStats: [
+            { $group: { _id: '$brand', count: { $sum: 1 } } },
+            { $sort: { count: -1 } }
+          ],
+
+          // Sub-pipeline D: Calculate Min, Max, and Average Prices
+          priceStats: [
+            {
+              $group: {
+                _id: null,
+                minPrice: { $min: '$price' },
+                maxPrice: { $max: '$price' },
+                avgPrice: { $avg: '$price' }
+              }
+            }
+          ]
+        }
+      }
+    ]);
+
+    // Format output
+    const facetData = results[0];
+    const totalProducts = facetData.totalCount[0]?.count || 0;
+    const totalPages = Math.ceil(totalProducts / limit);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        products: facetData.products,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalProducts
+        },
+        facets: {
+          brands: facetData.brandStats.map(b => ({ brand: b._id || 'Generic', count: b.count })),
+          priceRange: facetData.priceStats[0] || { minPrice: 0, maxPrice: 0, avgPrice: 0 }
+        }
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+
+
+// -------------------------------------------------------------
+// INSTANT AUTO-COMPLETE SEARCH WITH RELEVANCE SCORING
+// GET /api/products/autocomplete?q=iphone
+// -------------------------------------------------------------
+exports.getAutoCompleteSuggestions = async (req, res) => {
+  try {
+    const query = req.query.q || '';
+
+    if (!query || query.trim().length < 2) {
+      return res.status(200).json({ success: true, data: [] });
+    }
+
+    const regex = new RegExp(query.trim(), 'i');
+
+    // Fast Regex Search on Active Products
+    const suggestions = await Product.find({
+      isActive: true,
+      $or: [
+        { name: regex },
+        { brand: regex },
+        { description: regex }
+      ]
+    })
+      .select('name price brand images category') // Fetch only lightweight fields!
+      .sort('-createdAt')
+      .limit(6); // Return top 6 instant suggestions for dropdown UI
+
+    res.status(200).json({
+      success: true,
+      count: suggestions.length,
+      data: suggestions
+    });
+
+  } catch (error) {
+    console.error('Autocomplete Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

@@ -21,6 +21,7 @@ import AdminUsers from './pages/admin/AdminUsers';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import SSENotifications from './components/SSENotifications';
+import VideoDemo from './pages/VideoDemo';
 
 function LiveToastNotification() {
   const { liveNotification } = useSocket();
@@ -67,6 +68,7 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path='/video' element={<VideoDemo />} />
 
           {/* Protected User Routes */}
           <Route element={<ProtectedRoute />}>

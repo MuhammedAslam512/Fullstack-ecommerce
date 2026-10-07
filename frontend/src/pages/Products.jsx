@@ -5,8 +5,10 @@ import FilterSidebar from '../components/FilterSidebar';
 import Pagination from '../components/Pagination';
 import ProductDetailModal from '../components/ProductDetailModal';
 import { PackageX } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 export default function Products() {
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -14,8 +16,8 @@ export default function Products() {
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   const initialFilters = {
-    search: '',
-    category: '',
+    search: searchParams.get('search') || '',
+    category: searchParams.get('category') || '',
     minPrice: '',
     maxPrice: '',
     sort: '-createdAt',
@@ -24,7 +26,21 @@ export default function Products() {
   };
 
   const [filters, setFilters] = useState(initialFilters);
-  
+
+  // SYNC URL PARAMETERS WITH FILTERS (Runs whenever URL query changes!)
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') || '';
+    const urlCategory = searchParams.get('category') || '';
+
+    setFilters((prev) => ({
+      ...prev,
+      search: urlSearch,
+      category: urlCategory,
+      page: 1 // Reset to page 1 on new search
+    }));
+  }, [searchParams]);
+
+
   // Load Categories once on mount
   useEffect(() => {
     api.get('/categories')
@@ -123,7 +139,7 @@ export default function Products() {
       />
     </div>
   );
-  
+
 }
 
 

@@ -10,7 +10,7 @@ const cookieParser = require('cookie-parser');
 const sseRoutes = require('./routes/sseRoutes')
 const session = require('express-session');
 const passport = require('./config/passport')
-
+const videoRoutes = require('./routes/videoRoutes')
 
 const logger = require('./middleware/logger');
 const notFound = require('./middleware/notFound');
@@ -170,6 +170,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/uploads', uploadRoutes)
+app.use('/api/video', videoRoutes)
 
 // Function to setup GraphQL AND Error Handlers in correct order
 const setupGraphQLAndErrors = async (app) => {

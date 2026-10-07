@@ -6,7 +6,9 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
-  uploadProductImages
+  uploadProductImages,
+  getFacetedProducts,
+  getAutoCompleteSuggestions
 } = require('../controllers/productController');
 const { protect, authorize } = require('../middleware/auth');
 const upload = require('../middleware/upload');
@@ -40,7 +42,9 @@ const { uploadProductCloud } = require('../middleware/cloudUpload');
  *         description: Paginated product list
  */
 router.get('/',cacheMiddleware(60), getAllProducts);
+router.get('/autocomplete', getAutoCompleteSuggestions)
 router.get('/:id', getProduct);
+router.get('/faceted-search', getFacetedProducts)
 /**
  * @swagger
  * /products:

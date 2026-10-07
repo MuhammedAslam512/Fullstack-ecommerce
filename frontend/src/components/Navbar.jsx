@@ -1,7 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { ShoppingBag, ShoppingCart, User, LogOut, ShieldCheck, LogIn, Package } from 'lucide-react';
+import SearchBar from './SearchBar';
+import { Film, ShoppingBag, ShoppingCart, User, LogOut, ShieldCheck, LogIn, Package } from 'lucide-react';
 
 export default function Navbar() {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
@@ -28,12 +29,21 @@ export default function Navbar() {
         <div style={styles.menu}>
           <Link to="/" style={styles.link}>Products</Link>
 
+          <div style={styles.container}>
+            <Link to='/' style={styles.logo}></Link>
+            <SearchBar />
+          </div>
+
           {/* Cart Icon Link */}
           <Link to="/cart" style={styles.cartLink}>
             <ShoppingCart size={20} color="#334155" />
             {totalItemCount > 0 && (
               <span style={styles.cartBadge}>{totalItemCount}</span>
             )}
+          </Link>
+
+          <Link to='/video' style = {styles.link}>
+            <Film size={18} style={{marginRight: '4px'}}/> Video Stream
           </Link>
 
           {isAuthenticated ? (
