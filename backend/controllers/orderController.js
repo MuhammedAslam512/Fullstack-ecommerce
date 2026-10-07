@@ -3,6 +3,7 @@ const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const { getIO } = require('../config/socket')
 const { broadcastSSEEvent } = require('./sseController')
+const { publishOrderEvent } = require('../config/rabbitmq')
 
 // CREATE order (from cart)
 exports.createOrder = async (req, res) => {
@@ -56,6 +57,14 @@ exports.createOrder = async (req, res) => {
     } catch (err) {
       console.log('Socket notification notice:', err.message);
     }
+
+    publishOrderEvent('order.created', {
+      orderId: order._id,
+      userId: req.user.id,
+      totalAmount: order.totalAmount,
+      items: order.items
+    });
+
 
     res.status(201).json({ success: true, message: 'Order placed!', data: order });
   } catch (error) {

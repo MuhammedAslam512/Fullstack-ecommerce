@@ -7,6 +7,8 @@ const connectDB = require('./config/db');
 const { initSocket } = require('./config/socket');
 const initEmailWorker = require('./workers/emailWorker');
 const logger = require('./config/logger')
+const {connectRabbitMQ} = require('./config/rabbitmq')
+const startInventoryWorker = require('./workers/inventoryWorker')
 
 const PORT = process.env.PORT || 5000;
 
@@ -20,6 +22,9 @@ const startServer = async () => {
 
     // 2. Start BullMQ Email Worker
     initEmailWorker();
+
+    await connectRabbitMQ();
+    startInventoryWorker()
 
     // 3. Setup Apollo GraphQL Server AND Error Handlers in correct order
     await setupGraphQLAndErrors(app);
