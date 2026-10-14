@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: donglify-backend-deployment
+  labels:
+    app: donglify-backend
+spec:
+  replicas: 3 # Maintain 3 running Pod instances for high availability!
+  selector:
+    matchLabels:
+      app: donglify-backend
+  template:
+    metadata:
+      labels:
+        app: donglify-backend
+    spec:
+      containers:
+        - name: backend-api
+          image: donglify-backend:latest # Docker Image
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              value: "5000"
+            - name: NODE_ENV
+              value: "production"
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: db-secrets
+                  key: mongo-uri
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          # Auto-Healing Liveness Probe: Checks if server is alive every 10s!
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
