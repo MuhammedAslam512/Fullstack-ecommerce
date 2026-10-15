@@ -41,3 +41,38 @@ const startServer = async () => {
 };
 
 startServer();
+
+
+// -------------------------------------------------------------
+// GRACEFUL SHUTDOWN HANDLER (ZERO DOWNTIME REQUIREMENT)
+//  ------------------------------------------------------------
+const gracefulShutdown = (signal) => {
+  logger.info(`⚠️ Received ${signal}. Starting Graceful Shutdown...`);
+
+  // Stop accepting new HTTP connections
+  server.close(async () => {
+    logger.info('HTTP & WebSocket server closed.');
+
+    try {
+      // Close Database connections safely
+      const mongoose = require('mongoose');
+      await mongoose.connection.close();
+      logger.info('MongoDB connection closed.');
+
+      process.exit(0); // Exit cleanly
+    } catch (err) {
+      logger.error(`Error during graceful shutdown: ${err.message}`);
+      process.exit(1);
+    }
+  });
+
+  // Force exit after 10 seconds if connections hang
+  setTimeout(() => {
+    logger.error('Could not close connections in time, forcing exit');
+    process.exit(1);
+  }, 10000);
+};
+
+// Listen for process termination signals from Docker / Kubernetes / Render
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
