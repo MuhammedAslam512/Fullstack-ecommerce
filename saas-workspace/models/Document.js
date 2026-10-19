@@ -5,28 +5,30 @@ const documentSchema = new mongoose.Schema(
     title: {
       type: String,
       required: [true, 'Document title required'],
-      trim: true
+      trim: true,
+      default: 'Untitled Document',
     },
     content: {
       type: String,
-      default: ''
+      default: '',
     },
     workspace: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Workspace',
       required: true,
-      index: true // Index for fast multi-tenant queries!
+      index: true,
     },
-    author: {
+    createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true
-    }
+      required: true,
+    },
+    lastUpdatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
   },
   { timestamps: true }
 );
-
-// Multi-tenant Compound Index for fast document lookups within a tenant workspace
-documentSchema.index({ workspace: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Document', documentSchema);

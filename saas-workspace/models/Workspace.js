@@ -41,7 +41,22 @@ const workspaceSchema = new mongoose.Schema(
       type: String,
       enum: ['Free', 'Pro', 'Enterprise'],
       default: 'Free'
-    }
+    },
+    subscription: {
+      stipeCustomerId: { type: String, default: null },
+      stripeSubscriptionId: { type: String, default: null },
+      plan: {
+        type: String,
+        enum: ['FREE', 'PRO', 'ENTERPRISE'],
+        default: 'FREE',
+      },
+      status: {
+        type: String,
+        enum: ['active', 'past_due', 'canceled', 'incomplete', 'trailing'],
+        default: 'active',
+      },
+      currentPeriodEnd: { type: Date },
+    },
   },
   { timestamps: true }
 );
