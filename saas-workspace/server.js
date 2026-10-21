@@ -5,6 +5,7 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const { handleStripeWebhook } = require('./controllers/webhookController')
 const {tenantRateLimiter} = require('./middleware/rateLimiter')
+const {resolveTenantDomain} = require('./middleware/domainTenant')
 const Document = require('./models/Document');
 require('dotenv').config();
 
@@ -27,6 +28,8 @@ app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), hand
 
 app.use(express.json());
 
+app.use(resolveTenantDomain)
+
 app.use(tenantRateLimiter);
 
 // REST Routes
@@ -37,7 +40,7 @@ app.use('/api/documents', require('./routes/documentRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 
 const { protect } = require('./middleware/auth');
-const { requriePlan, requirePlan } = require('./middleware/subscription');
+const { requirePlan } = require('./middleware/subscription');
 
 app.get('/api/analytics/pro', protect, requirePlan('PRO'), (req, res) => {
   res.json({
@@ -52,9 +55,14 @@ app.get('/api/analytics/pro', protect, requirePlan('PRO'), (req, res) => {
 
 // Health Check
 app.get('/', (req, res) => {
-  res.json({ success: true, message: 'Donglify SaaS Collaborative Workspace API running on Port 5005' });
+  res.json({
+    success: true,
+    message: 'Donglify SaaS Workspace API running on Port 5005',
+    resolvedTenant: req.workspace
+      ? { id: req.workspace._id, name: req.workspace.name, slug: req.workspace.slug, customDomain: req.workspace.customDomain }
+      : 'No tenant resolved from Host header.',
+  });
 });
-
 // --- REAL-TIME COLLABORATION ENGINE (SOCKET.IO) ---
 const activeUsers = {}; // Tracks socketId -> { username, docId }
 

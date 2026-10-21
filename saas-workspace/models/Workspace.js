@@ -12,7 +12,15 @@ const workspaceSchema = new mongoose.Schema(
       required: true,
       unique: true,
       lowercase: true,
-      trim: true
+      trim: true,
+      index: true,
+    },
+    customDomain: {
+      type: String,
+      unique: true,
+      sparse: true,
+      lowercase: true,
+      trim: true,
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
@@ -37,11 +45,6 @@ const workspaceSchema = new mongoose.Schema(
         }
       }
     ],
-    plan: {
-      type: String,
-      enum: ['Free', 'Pro', 'Enterprise'],
-      default: 'Free'
-    },
     subscription: {
       stipeCustomerId: { type: String, default: null },
       stripeSubscriptionId: { type: String, default: null },

@@ -75,3 +75,46 @@ exports.inviteMember = async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 };
+
+
+// @desc    Bind Custom Domain to Workspace (Enterprise Feature)
+// @route   POST /api/workspaces/custom-domain
+// @access  Private (Workspace Owner + Enterprise Plan)
+exports.bindCustomDomain = async (req, res) => {
+  try {
+    const { domain } = req.body;
+    const workspace = req.workspace || (await Workspace.findById(req.headers['x-workspace-id']));
+
+    if (!workspace) {
+      return res.status(404).json({ message: 'Workspace not found.' });
+    }
+
+    if (!domain || typeof domain !== 'string') {
+      return res.status(400).json({ message: 'Valid custom domain string required.' });
+    }
+
+    const cleanDomain = domain.toLowerCase().trim();
+
+    // Check if domain is already in use by another workspace
+    const existing = await Workspace.findOne({ customDomain: cleanDomain });
+    if (existing && existing._id.toString() !== workspace._id.toString()) {
+      return res.status(400).json({ message: 'This custom domain is already registered to another workspace.' });
+    }
+
+    workspace.customDomain = cleanDomain;
+    await workspace.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Custom domain ${cleanDomain} successfully bound to workspace ${workspace.name}!`,
+      data: {
+        workspaceId: workspace._id,
+        slug: workspace.slug,
+        customDomain: workspace.customDomain,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to bind custom domain.', error: error.message });
+  }
+};
+
