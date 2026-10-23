@@ -38,6 +38,18 @@ app.use('/api/workspaces', require('./routes/workspaceRoutes'));
 app.use('/api/billing', require('./routes/billingRoutes'))
 app.use('/api/documents', require('./routes/documentRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
+app.use('/api/audit-logs', require('./routes/authRoutes'));
+
+// Health Check
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Donglify SaaS Workspace API running on Port 5005',
+    resolvedTenant: req.workspace
+      ? { id: req.workspace._id, name: req.workspace.name, slug: req.workspace.slug, customDomain: req.workspace.customDomain }
+      : 'No tenant resolved from Host header.',
+  });
+});
 
 const { protect } = require('./middleware/auth');
 const { requirePlan } = require('./middleware/subscription');
@@ -52,17 +64,6 @@ app.get('/api/analytics/pro', protect, requirePlan('PRO'), (req, res) => {
     }
   })
 })
-
-// Health Check
-app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Donglify SaaS Workspace API running on Port 5005',
-    resolvedTenant: req.workspace
-      ? { id: req.workspace._id, name: req.workspace.name, slug: req.workspace.slug, customDomain: req.workspace.customDomain }
-      : 'No tenant resolved from Host header.',
-  });
-});
 // --- REAL-TIME COLLABORATION ENGINE (SOCKET.IO) ---
 const activeUsers = {}; // Tracks socketId -> { username, docId }
 

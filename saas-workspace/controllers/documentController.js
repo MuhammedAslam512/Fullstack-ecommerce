@@ -20,6 +20,17 @@ exports.createDocument = async (req, res) => {
       lastUpdatedBy: req.user._id,
     });
 
+    logAuditEvent({
+      workspaceId,
+      user: req.user,
+      action: 'DOCUMENT_CREATED',
+      resource: 'Document',
+      resourceId: document._id.toString(),
+      details: { title: document.title },
+      severity: 'INFO',
+      req,
+    });
+
     res.status(201).json({ success: true, data: document });
   } catch (error) {
     res.status(500).json({ message: 'Failed to create document.', error: error.message });

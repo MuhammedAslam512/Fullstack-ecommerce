@@ -31,6 +31,18 @@ const requireWorkspaceMember = async (req, res, next) => {
     );
 
     if (!memberRecord) {
+      //security instruction attempt detected
+        logAuditEvent({
+        workspaceId: workspace._id,
+        user: req.user,
+        action: 'CROSS_TENANT_ACCESS_DENIED',
+        resource: 'Workspace',
+        resourceId: workspace._id.toString(),
+        details: { attemptedPath: req.originalUrl, method: req.method },
+        severity: 'CRITICAL',
+        req,
+      });
+
       return res.status(403).json({
         success: false,
         message: '🚫 Access Denied: You are not a member of this Workspace tenant!'
