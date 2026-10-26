@@ -22,6 +22,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import SSENotifications from './components/SSENotifications';
 import VideoDemo from './pages/VideoDemo';
+import { WorkspaceProvider } from './context/WorkspaceContext';
+import WorkspaceDashboard from './pages/saas/WorkspaceDashboard';
 
 function LiveToastNotification() {
   const { liveNotification } = useSocket();
@@ -58,39 +60,41 @@ export default function App() {
   return (
     <BrowserRouter>
       <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
-        <Navbar />
-        <SSENotifications />
-        <LiveToastNotification />
-        <Routes>
-          {/* Public Routes */}
-          <Route path="/" element={<Products />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path='/video' element={<VideoDemo />} />
+        <WorkspaceProvider>
+          <Navbar />
+          <SSENotifications />
+          <LiveToastNotification />
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<Products />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path='/video' element={<VideoDemo />} />
 
-          {/* Protected User Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/order-success" element={<OrderSuccess />} />
-            <Route path="/my-orders" element={<MyOrders />} />
-          </Route>
-
-          {/* Admin Routes */}
-          <Route element={<AdminRoute />}>
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="products" element={<AdminProducts />} />
-              <Route path="orders" element={<AdminOrders />} />
-              <Route path="categories" element={<AdminCategories />} />
-              <Route path="users" element={<AdminUsers />} />
+            {/* Protected User Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/saas/dashboard" element={<WorkspaceDashboard />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/order-success" element={<OrderSuccess />} />
+              <Route path="/my-orders" element={<MyOrders />} />
             </Route>
-          </Route>
 
-        </Routes>
+            {/* Admin Routes */}
+            <Route element={<AdminRoute />}>
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="products" element={<AdminProducts />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="categories" element={<AdminCategories />} />
+                <Route path="users" element={<AdminUsers />} />
+              </Route>
+            </Route>
+          </Routes>
+        </WorkspaceProvider>
       </div>
     </BrowserRouter>
   );

@@ -21,7 +21,7 @@ export const fetchCsrfToken = async () => {
       csrfTokenCache = res.data.csrfToken;
     }
   } catch (error) {
-    console.error('Failed to fetch CSRF token:', err.message)
+    console.error('Failed to fetch CSRF token:', error.message)
   }
 }
 
@@ -32,6 +32,7 @@ fetchCsrfToken();
 api.interceptors.request.use(
   async (config) => {
     const token = localStorage.getItem('token');
+    const activeWorkspaceId = localStorag.getItem('activeWorkspaceId')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -43,6 +44,10 @@ api.interceptors.request.use(
 
       if(csrfTokenCache) {
         config.headers['x-csrf-token'] = csrfTokenCache;
+      }
+
+      if(activeWorkspaceId) {
+        config.headers['x-workspace-id'] = activeWorkspaceId;
       }
     }
     return config;
