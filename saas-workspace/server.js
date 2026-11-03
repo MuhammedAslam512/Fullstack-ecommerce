@@ -22,7 +22,21 @@ const io = new Server(server, {
 
 connectDB();
 
-app.use(cors());
+const ALLOWED_ORIGINS = [
+  process.env.FRONTEND_URL || 'http://localhost:5173',
+  'http://dongilfy-app.vercel.app',
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if(!origin || ALLOWED_ORIGINS.includes(origin)){
+      callback(null, true);
+    }else{
+      callback(new Error('CORS Policy : Origin not allowed by Donglify SaaS Security'));
+    }
+  },
+  credentials: true,
+}));
 
 app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
@@ -39,6 +53,7 @@ app.use('/api/billing', require('./routes/billingRoutes'))
 app.use('/api/documents', require('./routes/documentRoutes'));
 app.use('/api/analytics', require('./routes/analyticsRoutes'));
 app.use('/api/audit-logs', require('./routes/authRoutes'));
+app.use('/api/audit-logs', require('./routes/auditRoutes'));  
 
 // Health Check
 app.get('/', (req, res) => {

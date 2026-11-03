@@ -1,11 +1,17 @@
 const Stripe = require('stripe');
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const Workspace = require('../models/Workspace');
 
-// Mapping Plan Tiers to Test Stripe Price IDs
-const PLAN_PRICE_MAP = {
-  PRO: process.env.STRIPE_PRO_PRICE_ID || 'price_pro_test_123',
-  ENTERPRISE: process.env.STRIPE_ENTERPRISE_PRICE_ID || 'price_ent_test_456',
+// Dynamic Pricing Map (Amount in Cents: $29.00 = 2900, $99.00 = 9900)
+const PLAN_DETAILS = {
+  PRO: {
+    name: 'Donglify Pro Plan',
+    amount: 2900, // $29/month
+  },
+  ENTERPRISE: {
+    name: 'Donglify Enterprise Plan',
+    amount: 9900, // $99/month
+  },
 };
 
 // @desc    Create a Stripe Checkout Session for Plan Upgrade
@@ -15,7 +21,7 @@ exports.createCheckoutSession = async (req, res) => {
   try {
     const { workspaceId, plan } = req.body;
 
-    if (!PLAN_PRICE_MAP[plan]) {
+    if (!PLAN_DETAILS[plan]) {
       return res.status(400).json({ message: 'Invalid subscription plan selected.' });
     }
 
@@ -24,7 +30,7 @@ exports.createCheckoutSession = async (req, res) => {
       return res.status(404).json({ message: 'Workspace not found.' });
     }
 
-    // Create Stripe Customer if not exists
+    // Create or retrieve Stripe Customer
     let customerId = workspace.subscription.stripeCustomerId;
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -37,14 +43,23 @@ exports.createCheckoutSession = async (req, res) => {
       await workspace.save();
     }
 
-    // Create Checkout Session
+    // Create Checkout Session using dynamic price_data
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
-      payment_method_types: ['card'],
       line_items: [
         {
-          price: PLAN_PRICE_MAP[plan],
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: PLAN_DETAILS[plan].name,
+              description: `Subscription tier for ${workspace.name}`,
+            },
+            unit_amount: PLAN_DETAILS[plan].amount,
+            recurring: {
+              interval: 'month',
+            },
+          },
           quantity: 1,
         },
       ],
@@ -52,8 +67,8 @@ exports.createCheckoutSession = async (req, res) => {
         workspaceId: workspace._id.toString(),
         plan: plan,
       },
-      success_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/workspace/${workspace.slug}?billing=success`,
-      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/workspace/${workspace.slug}?billing=canceled`,
+      success_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/saas/dashboard?billing=success`,
+      cancel_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/saas/dashboard?billing=canceled`,
     });
 
     res.status(200).json({ url: session.url, sessionId: session.id });
@@ -63,7 +78,7 @@ exports.createCheckoutSession = async (req, res) => {
   }
 };
 
-// @desc    Create Customer Billing Portal (Manage Cards/Cancel Sub)
+// @desc    Create Customer Billing Portal
 // @route   POST /api/billing/portal
 // @access  Private (Workspace Owner Only)
 exports.createCustomerPortal = async (req, res) => {
@@ -77,7 +92,7 @@ exports.createCustomerPortal = async (req, res) => {
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: workspace.subscription.stripeCustomerId,
-      return_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/workspace/${workspace.slug}`,
+      return_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/saas/dashboard`,
     });
 
     res.status(200).json({ url: portalSession.url });

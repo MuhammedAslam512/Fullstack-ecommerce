@@ -25,7 +25,7 @@ exports.enforceDocumentLimit = async (req, res, next) => {
 
         // Count existing documents in this workspace
         const currentDocCount = await Document.countDocuments({ workspace: workspaceId });
-
+        
         if (currentDocCount >= limit) {
             return res.status(403).json({
                 error: 'LIMIT_EXCEEDED',
@@ -33,6 +33,7 @@ exports.enforceDocumentLimit = async (req, res, next) => {
                 upgradeRequired: true,
             });
         }
+
 
         req.workspace = workspace;
         next();

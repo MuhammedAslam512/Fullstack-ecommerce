@@ -1,4 +1,5 @@
 const Document = require('../models/Document');
+const {logAuditEvent} = require('../utils/auditLogger');
 
 // @desc    Create a Document inside Workspace
 // @route   POST /api/documents
